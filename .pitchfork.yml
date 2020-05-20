@@ -1,0 +1,51 @@
+##
+## Default (built-in) settings
+##
+
+hosts:
+  github:
+    name: GitHub
+    base: https://github.com
+    auth: ssh
+
+##
+## System level configuration
+## $(dirname "${BASH_SOURCE[0]}")/.pitchfork.yml
+##
+## User level configuration
+## $HOME/.pitchfork.yml
+##
+## Project level configuration
+## $PWD/(../).pitchfork.yml
+##
+## Local overrides at any level
+## (add to gitignore: .pitchfork.*.yml)
+## .pitchfork.local.yml
+##
+## Extensible style
+## .pitchfork.00-first.yml
+## .pitchfork.99-last.yaml
+##
+## Via environment variables
+## PF_HOSTS_GITHUB_USER=octocat pitchfork inspect
+## PITCHFORK_HOSTS_GITHUB_USER=$PF_HOSTS_GITHUB_USER pitchfork inspect
+##
+## Using command-line arguments
+## pitchfork inspect --hosts-github-user=$PITCHFORK_HOSTS_GITHUB_USER
+##
+
+# hosts:
+#   github:
+#     user: AlexanderZagaynov
+#
+# remotes:
+#   upstream:
+#     host: github
+#     owner: rails
+#   origin:
+#     parent: upstream
+
+##
+## Shell glob:         `.pitchfork.*.y{a,}ml`
+## Regular expression: `/\.pitchfork(?:\..*)?\.ya?ml/i`
+##

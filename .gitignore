@@ -17,3 +17,6 @@
 # Local temporary files
 /tmp/
 !/tmp/.keep
+
+.pitchfork.*.yml
+.pitchfork.*.yaml
