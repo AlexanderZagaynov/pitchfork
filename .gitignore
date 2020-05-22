@@ -20,3 +20,5 @@
 
 .pitchfork.*.yml
 .pitchfork.*.yaml
+
+.env

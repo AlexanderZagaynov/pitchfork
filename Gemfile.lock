@@ -1,0 +1,60 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    activesupport (6.0.3.1)
+      concurrent-ruby (~> 1.0, >= 1.0.2)
+      i18n (>= 0.7, < 2)
+      minitest (~> 5.1)
+      tzinfo (~> 1.1)
+      zeitwerk (~> 2.2, >= 2.2.2)
+    addressable (2.7.0)
+      public_suffix (>= 2.0.2, < 5.0)
+    amazing_print (1.1.0)
+    byebug (11.1.3)
+    coderay (1.1.2)
+    concurrent-ruby (1.1.6)
+    dotenv (2.7.5)
+    faraday (1.0.1)
+      multipart-post (>= 1.2, < 3)
+    git (1.7.0)
+      rchardet (~> 1.8)
+    i18n (1.8.2)
+      concurrent-ruby (~> 1.0)
+    method_source (1.0.0)
+    minitest (5.14.1)
+    multipart-post (2.1.1)
+    octokit (4.18.0)
+      faraday (>= 0.9)
+      sawyer (~> 0.8.0, >= 0.5.3)
+    pry (0.13.1)
+      coderay (~> 1.1)
+      method_source (~> 1.0)
+    pry-byebug (3.9.0)
+      byebug (~> 11.0)
+      pry (~> 0.13.0)
+    public_suffix (4.0.5)
+    rchardet (1.8.0)
+    sawyer (0.8.2)
+      addressable (>= 2.3.5)
+      faraday (> 0.8, < 2.0)
+    thread_safe (0.3.6)
+    tzinfo (1.2.7)
+      thread_safe (~> 0.1)
+    zeitwerk (2.3.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  activesupport
+  amazing_print
+  dotenv
+  git
+  octokit
+  pry-byebug
+
+RUBY VERSION
+   ruby 2.7.0p0
+
+BUNDLED WITH
+   2.1.4

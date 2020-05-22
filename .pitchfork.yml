@@ -33,19 +33,15 @@ hosts:
 ## Using command-line arguments
 ## pitchfork inspect --hosts-github-user=$PITCHFORK_HOSTS_GITHUB_USER
 ##
-
-# hosts:
-#   github:
-#     user: AlexanderZagaynov
-#
-# remotes:
-#   upstream:
+## Example of expected project-specific config file:
+# repos:
+## Direct clone version
+#   rails-dev-box:
+#     path: ~/work/rails-dev-box
 #     host: github
 #     owner: rails
-#   origin:
-#     parent: upstream
-
-##
-## Shell glob:         `.pitchfork.*.y{a,}ml`
-## Regular expression: `/\.pitchfork(?:\..*)?\.ya?ml/i`
-##
+## Forked version
+#   rails:
+#     path: ~/work/rails-dev-box/rails
+#     host: github
+#     upstream: rails
