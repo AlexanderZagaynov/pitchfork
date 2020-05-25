@@ -57,11 +57,17 @@ config = Dir.glob(CONFIG_FILES).each_with_object({}) do |file, memo|
   memo.deep_merge! YAML.load_file(file, fallback: {})
 end.to_struct.freeze
 
-github = Octokit::Client.new(access_token: ENV['GITHUB_TOKEN'])
-gh_user = github.user.freeze # .to_hash.to_struct.freeze
-
-config.hosts.github.client = github # TODO: different providers
-config.hosts.github.user = gh_user
+config.hosts.each_pair do |host_name, host|
+  token = ENV["#{host_name.upcase}_TOKEN"]
+  unless token.present?
+    puts "Missing token for #{host.name}"
+    next
+  end
+  options = { access_token: token }
+  options[:api_endpoint] = "https://#{host.api_endpoint}/api/v3/" if host.api_endpoint.present?
+  host.client = Octokit::Client.new(options) # TODO: different providers
+  host.user   = host.client.user.freeze # .to_hash.to_struct.freeze
+end
 
 ## check for forks first
 
@@ -70,12 +76,19 @@ MAX_RETRIES = 4
 SLEEP_INTERVAL = 15
 
 config.repos.each_pair do |repo_name, repo|
+  config.defaults.repos.each_pair do |attr_name, attr_value|
+    repo[attr_name] ||= attr_value
+  end
   repo.host = config.hosts[repo.host]
+  unless repo.host[:client].present?
+    puts "Missing client for repo '#{repo_name}'"
+    next
+  end
   repo.owner ||= repo.host.user.login
 
   begin
     repo.origin_url = get_remote_url(repo.host, repo.owner, repo_name)
-  rescue Octokit::NotFound
+  rescue Octokit::NotFound ## TODO: Pitchfork::NotFound
     if repo.upstream.present?
       thread = threads[repo] = Thread.new("#{repo.upstream}/#{repo_name}") do |full_name|
         repo.host.client.fork(full_name)
@@ -83,6 +96,7 @@ config.repos.each_pair do |repo_name, repo|
         retries = MAX_RETRIES
         begin # wait for fork to finish
           sleep SLEEP_INTERVAL
+          puts "Checking for #{full_name} fork to complete..."
           repo.origin_url = get_remote_url(repo.host, repo.owner, repo_name)
         rescue Octokit::NotFound
           if retries > 0
@@ -108,28 +122,34 @@ end
 ##
 
 config.repos.each_pair do |repo_name, repo|
-  path = File.expand_path(repo.path)
-  if Dir.exist?(path)
-    if Dir.exist?(File.join path, '.git')
-      puts "Path exists: #{path}"
-      repo.local = Git.open(path)
-    elsif Dir.empty?(path)
-      puts "Empty path exists: #{path}"
+  repo.path = File.expand_path(repo.path || repo_name.to_s, repo.base_dir || File.pwd)
+
+  if Dir.exist?(repo.path)
+    if Dir.exist?(File.join repo.path, '.git')
+      puts "Path exists: #{repo.path}"
+      repo.local = Git.open(repo.path)
+    elsif Dir.empty?(repo.path)
+      puts "Empty path exists: #{repo.path}"
     else
-      puts "Path exists, but seems incorrect: #{path}"
+      puts "Path exists, but seems incorrect: #{repo.path}"
       exit -1
     end
-  elsif File.exist?(path)
-    puts "Path exists, but seems incorrect: #{path}"
+  elsif File.exist?(repo.path)
+    puts "Path exists, but seems incorrect: #{repo.path}"
     exit -1
   else
-    puts "Creating directory: #{path}"
-    FileUtils.mkpath(path)
+    puts "Creating directory: #{repo.path}"
+    FileUtils.mkpath(repo.path)
   end
 
-  if Dir.empty?(path)
-    puts "Clonning #{repo.origin_url} into #{path}"
-    repo.local = Git.clone(repo.origin_url, path)
+  if Dir.empty?(repo.path)
+    if repo.origin_url.present?
+      puts "Clonning #{repo.origin_url} into #{repo.path}"
+      repo.local = Git.clone(repo.origin_url, repo.path)
+    else
+      puts "Can't clone, missing origin url for repo '#{repo_name}'"
+      next
+    end
   else
     check_remote(repo.local, 'origin', repo.origin_url, repo_name)
   end
@@ -146,5 +166,6 @@ config.repos.each_pair do |repo_name, repo|
   # if repo.local.remote.name
 
   # ap repo.local.status # TODO: check if there is any local modifications, merge updates otherwise
-  puts 'Done!'
 end
+
+puts 'Done!'

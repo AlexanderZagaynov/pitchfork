@@ -5,8 +5,8 @@
 hosts:
   github:
     name: GitHub
-    base: https://github.com
     auth: ssh
+#    adapter: oktokit
 
 ##
 ## System level configuration
@@ -33,7 +33,10 @@ hosts:
 ## Using command-line arguments
 ## pitchfork inspect --hosts-github-user=$PITCHFORK_HOSTS_GITHUB_USER
 ##
+
+##
 ## Example of expected project-specific config file:
+##
 # repos:
 ## Direct clone version
 #   rails-dev-box:
@@ -45,3 +48,20 @@ hosts:
 #     path: ~/work/rails-dev-box/rails
 #     host: github
 #     upstream: rails
+
+##
+## Example of possible GitHub Enterprise host configuration:
+##
+# hosts:
+#   your_gh_ent:
+#     name: Your GitHub Enterprise
+## api_endpoint = "https://#{host.api_endpoint}/api/v3/"
+#     api_endpoint: github.example.com
+#     auth: ssh
+#
+# defaults:
+#   repos:
+#     host: your_gh_ent
+## path ||= "#{base_dir}/#{repo_name}"
+#     base_dir: ~/work
+#     upstream: your_default_org
