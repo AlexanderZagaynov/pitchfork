@@ -63,11 +63,51 @@ gh_user = github.user.freeze # .to_hash.to_struct.freeze
 config.hosts.github.client = github # TODO: different providers
 config.hosts.github.user = gh_user
 
+## check for forks first
+
+threads = {}
+MAX_RETRIES = 4
+SLEEP_INTERVAL = 15
+
 config.repos.each_pair do |repo_name, repo|
   repo.host = config.hosts[repo.host]
   repo.owner ||= repo.host.user.login
-  origin_url = get_remote_url(repo.host, repo.owner, repo_name)
 
+  begin
+    repo.origin_url = get_remote_url(repo.host, repo.owner, repo_name)
+  rescue Octokit::NotFound
+    if repo.upstream.present?
+      thread = threads[repo] = Thread.new("#{repo.upstream}/#{repo_name}") do |full_name|
+        repo.host.client.fork(full_name)
+
+        retries = MAX_RETRIES
+        begin # wait for fork to finish
+          sleep SLEEP_INTERVAL
+          repo.origin_url = get_remote_url(repo.host, repo.owner, repo_name)
+        rescue Octokit::NotFound
+          if retries > 0
+            retries -= 1
+            retry
+          else
+            raise
+          end
+        end
+      end
+      thread.abort_on_exception = true
+    else
+      raise
+    end
+  end
+end
+
+if threads.present?
+  puts "Waiting for the host forks to finish"
+  threads.each_value(&:join)
+end
+
+##
+
+config.repos.each_pair do |repo_name, repo|
   path = File.expand_path(repo.path)
   if Dir.exist?(path)
     if Dir.exist?(File.join path, '.git')
@@ -88,10 +128,10 @@ config.repos.each_pair do |repo_name, repo|
   end
 
   if Dir.empty?(path)
-    puts "Clonning #{origin_url} into #{path}"
-    repo.local = Git.clone(repo_url, path)
+    puts "Clonning #{repo.origin_url} into #{path}"
+    repo.local = Git.clone(repo.origin_url, path)
   else
-    check_remote(repo.local, 'origin', origin_url, repo_name)
+    check_remote(repo.local, 'origin', repo.origin_url, repo_name)
   end
 
   if repo.upstream.present?
@@ -99,7 +139,7 @@ config.repos.each_pair do |repo_name, repo|
     check_remote(repo.local, 'upstream', upstream_url, repo_name)
   end
 
-  # TODO: remote_repo.parent: The parent and source objects are present when the repository is a fork.
+  # TODO: remote_repo.parent, remote_repo.fork: The parent and source objects are present when the repository is a fork.
 
   # TODO: check primary remote via current branch?
   # branch_name = repo.local.current_branch
