@@ -8,4 +8,3 @@
 $ gem install pitchfork
 $ pitchfork
 ```
-

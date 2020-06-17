@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 
 source 'https://rubygems.org'
-ruby '~> 2.7.0'
+gemspec
 
-gem 'dotenv', require: 'dotenv/load'
-gem 'activesupport'
-gem 'octokit'
-gem 'git'
+gem 'rake', '~> 13.0'
 
-group :development do
+group *%i[development test] do
   gem 'amazing_print'
   gem 'pry-byebug'
+end
+
+group :test do
+  gem 'rspec', '~> 3.0'
 end

@@ -1,0 +1,5 @@
+# frozen_string_literal: true
+
+# TODO: load this file (DRY bin/console and spec/spec_helper.rb)
+AmazingPrint.defaults = { indent: -2, sort_keys: true }
+AmazingPrint.pry!

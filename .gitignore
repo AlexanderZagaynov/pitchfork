@@ -1,3 +1,17 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+
+# rspec failure tracking
+.rspec_status
+
+# this is a gem
+Gemfile.lock
+
 /tmp/
 !/tmp/.keep
 
@@ -5,4 +19,3 @@
 .pitchfork.*.yaml
 
 .env
-

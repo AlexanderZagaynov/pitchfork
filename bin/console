@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'bundler/setup'
+require 'dotenv/load'
+
+Bundler.require(*%i[default development])
+
+AmazingPrint.defaults = { indent: -2, sort_keys: true }
+AmazingPrint.pry!
+
+require 'pitchfork'
+Pry.start
