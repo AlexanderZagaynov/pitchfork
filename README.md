@@ -5,6 +5,7 @@
 ## Usage:
 
 ```bash
-$ git clone https://github.com/AlexanderZagaynov/pitchfork.git
-$ go run .
+$ gem install pitchfork
+$ pitchfork
 ```
+
