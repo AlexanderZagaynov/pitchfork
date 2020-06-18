@@ -5,7 +5,9 @@
   ostruct
   pathname
   active_support/core_ext/hash
-  pitchfork/environment
+  active_support/core_ext/object/blank
+  pitchfork
+  pitchfork/github
 ].each { |lib| require lib }
 
 class Pitchfork::Config
@@ -23,7 +25,7 @@ class Pitchfork::Config
     end
   end)
 
-  ROOT = Pathname(__dir__).expand_path('../..').freeze
+  ROOT = Pathname(__dir__).join('../..').expand_path.freeze
   CONFIG_FILES = %w[
     .pitchfork.{yml,yaml}
     .pitchfork.*.{yml,yaml}
@@ -35,6 +37,7 @@ class Pitchfork::Config
   def initialize
     find_config_files!
     load_config_files!
+    configure_hosts!
   end
 
   private
@@ -56,5 +59,25 @@ class Pitchfork::Config
     end.tap do |hash|
       log_debug { "Final config: \n#{hash.to_yaml}" }
     end.to_struct.freeze
+  end
+
+  def configure_hosts!
+    config.hosts.each_pair do |host_name, host|
+      token = ENV["#{host_name.upcase}_TOKEN"]
+      if token.blank?
+        log_warn { "Missing token for #{host.name}" }
+        next
+      end
+
+      options = { access_token: token }
+      options[:api_endpoint] = "https://#{host.api_endpoint}/api/v3/" if host.api_endpoint.present?
+
+      host.client = Octokit::Client.new(options) # TODO: different providers
+      host.user   = host.client.user.freeze # .to_hash.to_struct.freeze
+
+      host.freeze
+    end
+
+    config.hosts.freeze
   end
 end

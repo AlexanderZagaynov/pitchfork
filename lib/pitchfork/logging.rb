@@ -9,6 +9,6 @@ module Pitchfork
   LOGGER = Logger.new(STDOUT, progname: name)
 
   module Logging
-    delegate *%i[info debug], to: 'Pitchfork::LOGGER', prefix: 'log'
+    delegate *LOGGER.class::Severity.constants.map(&:downcase), to: 'Pitchfork::LOGGER', prefix: 'log'
   end
 end
