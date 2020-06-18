@@ -5,8 +5,13 @@
 hosts:
   github:
     name: GitHub
-    auth: ssh
 #    adapter: oktokit
+
+defaults:
+  hosts:
+    auth: ssh
+  repos:
+    host: github
 
 ##
 ## System level configuration
@@ -41,12 +46,10 @@ hosts:
 ## Direct clone version
 #   rails-dev-box:
 #     path: ~/work/rails-dev-box
-#     host: github
 #     owner: rails
 ## Forked version
 #   rails:
 #     path: ~/work/rails-dev-box/rails
-#     host: github
 #     upstream: rails
 
 ##
@@ -57,7 +60,7 @@ hosts:
 #     name: Your GitHub Enterprise
 ## api_endpoint = "https://#{host.api_endpoint}/api/v3/"
 #     api_endpoint: github.example.com
-#     auth: ssh
+#     auth: https
 #
 # defaults:
 #   repos:

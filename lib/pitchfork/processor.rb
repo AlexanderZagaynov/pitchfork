@@ -10,7 +10,7 @@ class Pitchfork::Processor
   attr_reader :config
 
   def initialize
-    @config = Pitchfork::Config.new.config
+    @config = Pitchfork::Config.new
   end
 
   def run

@@ -8,4 +8,5 @@
 
 module Pitchfork
   class Error < StandardError; end
+  class RemoteNotFound < Error; end
 end

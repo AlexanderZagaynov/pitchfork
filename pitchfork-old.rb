@@ -8,19 +8,8 @@ MAX_RETRIES = 4
 SLEEP_INTERVAL = 15
 
 config.repos.each_pair do |repo_name, repo|
-  config.defaults.repos.each_pair do |attr_name, attr_value|
-    repo[attr_name] ||= attr_value
-  end
-  repo.host = config.hosts[repo.host]
-  unless repo.host[:client].present?
-    puts "Missing client for repo '#{repo_name}'"
-    next
-  end
-  repo.owner ||= repo.host.user.login
 
   begin
-    repo.origin_url = get_remote_url(repo.host, repo.owner, repo_name)
-  rescue Octokit::NotFound ## TODO: Pitchfork::NotFound
     if repo.upstream.present?
       thread = threads[repo] = Thread.new("#{repo.upstream}/#{repo_name}") do |full_name|
         repo.host.client.fork(full_name)
