@@ -1,75 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'bundler/setup'
-Bundler.require(*%i[default development])
-
-AmazingPrint.defaults = { indent: -2, sort_keys: true }
-
-%w[
-  yaml
-  ostruct
-  fileutils
-  active_support/core_ext/hash
-  active_support/core_ext/object/blank
-].each { |lib| require lib }
-
-CONFIG_FILES = %w[
-  .pitchfork.{yml,yaml}
-  .pitchfork.*.{yml,yaml}
-].freeze
-
-module HashUtils
-  refine Hash do
-    def to_struct
-      hash = dup
-      hash.each do |key, value|
-        hash[key] = value.to_struct if value.is_a?(Hash)
-      end
-      OpenStruct.new(hash)
-    end
-  end
-end
-using HashUtils
-
-def get_remote_url(host, owner, repo_name)
-  remote_repo = host.client.repository("#{owner}/#{repo_name}")
-  host.auth == 'ssh' ? remote_repo.ssh_url : remote_repo.clone_url
-end
-
-def check_remote(local_repo, remote_name, remote_url, repo_name)
-  if local_repo.remotes.map(&:name).include?(remote_name) # TODO: better check
-    local_remote_url = local_repo.remote(remote_name).url
-    unless local_remote_url == remote_url
-      puts "Fixing #{remote_name} url for #{repo_name}, was: #{local_remote_url}"
-      local_repo.set_remote_url(remote_name, remote_url)
-    end
-  else
-    puts "Adding #{remote_name} to #{repo_name}, url: #{remote_url}"
-    local_repo.add_remote(remote_name, remote_url)
-  end
-
-  puts "Updating #{remote_name} of #{local_repo.dir.path} from #{remote_url}"
-  local_repo.fetch(remote_name)
-end
-
-config = Dir.glob(CONFIG_FILES).each_with_object({}) do |file, memo|
-  memo.deep_merge! YAML.load_file(file, fallback: {})
-end.to_struct.freeze
-
-config.hosts.each_pair do |host_name, host|
-  token = ENV["#{host_name.upcase}_TOKEN"]
-  unless token.present?
-    puts "Missing token for #{host.name}"
-    next
-  end
-  options = { access_token: token }
-  options[:api_endpoint] = "https://#{host.api_endpoint}/api/v3/" if host.api_endpoint.present?
-  host.client = Octokit::Client.new(options) # TODO: different providers
-  host.user   = host.client.user.freeze # .to_hash.to_struct.freeze
-end
-
-## check for forks first
+## check for the forks first
 
 threads = {}
 MAX_RETRIES = 4
@@ -139,7 +71,7 @@ config.repos.each_pair do |repo_name, repo|
     exit -1
   else
     puts "Creating directory: #{repo.path}"
-    FileUtils.mkpath(repo.path)
+    Pathname.mkpath(repo.path)
   end
 
   if Dir.empty?(repo.path)
