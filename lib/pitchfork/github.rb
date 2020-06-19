@@ -4,10 +4,16 @@
   octokit
   active_support/core_ext/module/delegation
   pitchfork
+  pitchfork/remote
 ].each { |lib| require lib }
 
 class Pitchfork::Github
+  include Pitchfork::Logging
+
   attr_reader *%i[host client user]
+
+  delegate :login, to: :user, allow_nil: true
+  delegate *%i[api_endpoint repository], to: :client, allow_nil: true
 
   def initialize(host, token)
     @host = host
@@ -19,22 +25,8 @@ class Pitchfork::Github
     @user   = client.user.freeze
   end
 
-  delegate :login, to: :user, allow_nil: true
-
-  class Remote # TODO: abstract and move to it's own file
-    attr_reader *%i[name user_name repo_name repository url]
-
-    def initialize(name, auth, client, user_name, repo_name)
-      @name       = name
-      @user_name  = user_name
-      @repo_name  = repo_name
-      @repository = client.repository(user: user_name, repo: repo_name)
-      @url        = auth == 'ssh' ? repository.ssh_url : repository.clone_url
-    end
-  end
-
   def get_remote(name, user_name, repo_name)
-    Remote.new(name, host.auth, client, user_name, repo_name)
+    Pitchfork::Remote.new(name, host.auth, self, user_name, repo_name)
   rescue Octokit::NotFound
     raise Pitchfork::RemoteNotFound # rebrand the error, keeping all info
   end
