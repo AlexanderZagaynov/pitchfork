@@ -21,42 +21,51 @@ class Pitchfork::Github
 
   delegate :login, to: :user, allow_nil: true
 
-  def get_remote_url(remote)
-    host.auth == 'ssh' ? remote.ssh_url : remote.clone_url
+  class Remote # TODO: abstract and move to it's own file
+    attr_reader *%i[name user_name repo_name repository url]
+
+    def initialize(name, auth, client, user_name, repo_name)
+      @name       = name
+      @user_name  = user_name
+      @repo_name  = repo_name
+      @repository = client.repository(user: user_name, repo: repo_name)
+      @url        = auth == 'ssh' ? repository.ssh_url : repository.clone_url
+    end
   end
 
-  def get_remote(repo, user)
-    client.repository(user: user, repo: repo)
+  def get_remote(name, user_name, repo_name)
+    Remote.new(name, host.auth, client, user_name, repo_name)
   rescue Octokit::NotFound
     raise Pitchfork::RemoteNotFound # rebrand the error, keeping all info
   end
 
-  def get_remotes(repo, user, owner = nil)
+  def get_remotes(repo)
     # if already cloned then fetch
     # else try to clone origin
     # if its not present then fork if has owner
     # clone after fork
     # if has upstream then add to remotes and fetch
-    if owner.present?
-    end
+
+    origin   = get_remote('origin',   repo.user,  repo.name)
+    upstream = get_remote('upstream', repo.owner, repo.name) if repo.owner.present?
+
+    [origin, upstream]
   end
 
   def fork_upstream(repo, owner)
   end
-
-  def check_remote(local_repo, remote_name, remote_url, repo_name)
-    if local_repo.remotes.map(&:name).include?(remote_name) # TODO: better check
-      local_remote_url = local_repo.remote(remote_name).url
-      unless local_remote_url == remote_url
-        puts "Fixing #{remote_name} url for #{repo_name}, was: #{local_remote_url}"
-        local_repo.set_remote_url(remote_name, remote_url)
-      end
-    else
-      puts "Adding #{remote_name} to #{repo_name}, url: #{remote_url}"
-      local_repo.add_remote(remote_name, remote_url)
-    end
-
-    puts "Updating #{remote_name} of #{local_repo.dir.path} from #{remote_url}"
-    local_repo.fetch(remote_name)
-  end
 end
+
+
+# if repo.upstream.present?
+#   upstream_url = get_remote_url(repo.host, repo.upstream, repo_name)
+#   check_remote(repo.local, 'upstream', upstream_url, repo_name)
+# end
+
+# TODO: remote_repo.parent, remote_repo.fork: The parent and source objects are present when the repository is a fork.
+
+# TODO: check primary remote via current branch?
+# branch_name = repo.local.current_branch
+# if repo.local.remote.name
+
+# ap repo.local.status # TODO: check if there is any local modifications, merge updates otherwise

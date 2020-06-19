@@ -26,12 +26,11 @@ class Pitchfork::Config
     end
   end)
 
-  ROOT = Pathname(__dir__).join('../..').expand_path.freeze
   CONFIG_FILES = %w[
     .pitchfork.{yml,yaml}
     .pitchfork.*.{yml,yaml}
   ].freeze
-  private_constant *%i[ROOT CONFIG_FILES]
+  private_constant :CONFIG_FILES
 
   attr_reader *%i[config config_files]
   delegate *%i[hosts repos], to: :config
@@ -41,16 +40,19 @@ class Pitchfork::Config
     load_config_files!
     configure_hosts!
     configure_repos!
+    config.freeze
   end
 
   private
 
+  attr_reader *%i[self_dir home_dir work_dir]
+
   def find_config_files!
-    @config_files = [
-      ROOT,
-      Pathname(Dir.home),
-      Pathname.pwd,
-    ].uniq.flat_map do |base|
+    @self_dir = Pathname(__dir__).join('../..').expand_path.freeze
+    @home_dir = Pathname(Dir.home).freeze
+    @work_dir = Pathname.pwd.freeze
+
+    @config_files = [self_dir, home_dir, work_dir].uniq.compact.flat_map do |base|
       base.glob(CONFIG_FILES).map(&:expand_path)
     end.freeze
 
@@ -69,7 +71,7 @@ class Pitchfork::Config
       end
 
       log_debug { "Final config: \n#{cfg.to_yaml}" }
-    end.to_struct.freeze
+    end.to_struct
   end
 
   def configure_hosts!
@@ -89,19 +91,21 @@ class Pitchfork::Config
 
   def configure_repos!
     repos.each_pair do |repo_name, repo|
-      repo.name     = repo_name
-      repo.host     = hosts[repo.host]
+      repo.name = repo_name.to_s
+      repo.host = hosts[repo.host]
+      repo.path = Pathname(repo.base_dir || work_dir).join(repo.path || repo.name).expand_path.freeze
       repo.provider = repo.host.provider
 
       if repo.provider.present?
         repo.user = repo.provider.login
-        repo.origin, repo.upstream = repo.provider.get_remotes(repo.name, repo.user, repo.owner)
+        repo.origin, repo.upstream = repo.provider.get_remotes(repo)
       else
         log_error { "Missing provider for repo '#{repo.name}'" }
       end
 
-      repo.freeze
+      ## TODO: to class
+      # repo.freeze
     end
-    repos.freeze
+    config.repos = repos.to_h.values.freeze
   end
 end
