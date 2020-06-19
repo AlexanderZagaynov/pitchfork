@@ -2,6 +2,7 @@
 
 %w[
   git
+  concurrent
   active_support/core_ext/module/delegation
   pitchfork
   pitchfork/config
@@ -18,20 +19,38 @@ class Pitchfork::Processor
   end
 
   def run
+    pool = Concurrent::ThreadPoolExecutor.new(
+      min_threads:     1,
+      max_threads:     Concurrent.processor_count,
+      max_queue:       Concurrent.processor_count * 5,
+      fallback_policy: :caller_runs,
+      auto_terminate:  false,
+      idletime:        5,
+    )
+
+    log_info { 'Starting repos processing in threads...' }
     repos.each do |repo|
-      next unless check_repo_path(repo)
-
-      if Dir.empty?(repo.path)
-        clone_repo(repo)
-      else
-        check_remote(repo, repo.origin)
-      end
-
-      check_remote(repo, repo.upstream) if repo.upstream.present?
+      pool.post { process_repo(repo) }
     end
+
+    log_info { 'Waiting all repo processing threads to shutdown...' }
+    pool.shutdown
+    pool.wait_for_termination
   end
 
   private
+
+  def process_repo(repo)
+    return unless check_repo_path(repo)
+
+    if Dir.empty?(repo.path)
+      clone_repo(repo)
+    else
+      check_remote(repo, repo.origin)
+    end
+
+    check_remote(repo, repo.upstream) if repo.upstream.present?
+  end
 
   def check_repo_path(repo)
     if repo.path.directory?
