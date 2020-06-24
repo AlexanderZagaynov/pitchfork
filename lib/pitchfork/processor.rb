@@ -20,8 +20,8 @@ class Pitchfork::Processor
 
   def run
     pool = Concurrent::ThreadPoolExecutor.new(
-      min_threads:     1,
-      max_threads:     Concurrent.processor_count,
+      min_threads:     0, # 1,
+      max_threads:     0, # Concurrent.processor_count,
       max_queue:       Concurrent.processor_count * 5,
       fallback_policy: :caller_runs,
       auto_terminate:  false,
@@ -49,7 +49,37 @@ class Pitchfork::Processor
       check_remote(repo, repo.origin)
     end
 
-    check_remote(repo, repo.upstream) if repo.upstream.present?
+    if repo.upstream.present?
+      check_remote(repo, repo.upstream)
+
+      # TODO: temporary here, refactor
+
+      Git::Lib.prepend(Module.new do
+        def symbolic_ref(ref, opts = {})
+          arr_opts = []
+          arr_opts << "--short" if opts[:short]
+          arr_opts << ref
+          command('symbolic-ref', arr_opts)
+        end
+      end)
+
+      current_branch = repo.local.lib.symbolic_ref('HEAD', short: true)
+      primary_branch = repo.local.lib.symbolic_ref('refs/remotes/origin/HEAD', short: true).gsub(/^origin\//, '')
+
+      mergeable   = true
+      mergeable &&= current_branch == primary_branch
+      mergeable &&= repo.local.status.yield_self do |status|
+        %i[added changed deleted].all? { |type| status.public_send(type).empty? }
+      end
+
+      if mergeable
+        log_info { "Merging upstream changes to #{primary_branch}" }
+        merge_info = repo.local.merge("upstream/#{primary_branch}")
+        log_info { merge_info }
+      else
+        log_warn { "Skipping upstream merge for #{repo.name} repo" }
+      end
+    end
   end
 
   def check_repo_path(repo)
