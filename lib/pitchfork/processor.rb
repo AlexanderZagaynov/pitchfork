@@ -126,7 +126,7 @@ class Pitchfork::Processor
 
       local_remote_url = repo.local.remote(remote.name).url
       unless local_remote_url == remote.url
-        low_info { "Fixing #{remote.name} url for #{repo.name}, was: #{local_remote_url}" }
+        log_info { "Fixing #{remote.name} url for #{repo.name}, was: #{local_remote_url}" }
         repo.local.set_remote_url(remote.name, remote.url)
       end
 
