@@ -50,7 +50,7 @@ class Pitchfork::Config
   def find_config_files!
     @self_dir = Pathname(__dir__).join('../..').expand_path.freeze
     @home_dir = Pathname(Dir.home).freeze
-    @work_dir = Pathname.pwd.freeze
+    @work_dir = (ENV["WORK_DIR"] ? Pathname(ENV["WORK_DIR"]) : Pathname.pwd).freeze
 
     @config_files = [self_dir, home_dir, work_dir].uniq.compact.flat_map do |base|
       base.glob(CONFIG_FILES).map(&:expand_path)
